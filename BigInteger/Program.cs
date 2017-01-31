@@ -9,35 +9,24 @@ namespace BigInteger
 {
     class Fourier
     {
-        public Complex[] Data { get; private set; }
-        public double[] Intensivity { get; private set; }
-        public Fourier(Complex[] InputArray)
-        {
-            Data = (Complex[])InputArray.Clone();
-        }
-        
-        public Fourier(double[] InputArray)
-            : this((from d in InputArray
-                    select new Complex(d, 0)).ToArray())
-        { }
-        public void FFT()
+        public static void FFT(ref Complex[] Data)
         {
             if (Data.Length == 1) return;
             int N = 1 << (int)Math.Ceiling(Math.Log(Data.Length) / Math.Log(2));
             var l = new List<Complex>(Data);
             l.InsertRange(Data.Length, new Complex[N - Data.Length]);
             Data = l.ToArray();
-            FFT_rec(Data, false);
-
-            Intensivity = (from c in Data
-                           select Math.Round(c.Magnitude * 10)).ToArray();
-            return;
+            FFT_rec(ref Data, false);
         }
-        public void IFFT()
+        public static void IFFT(ref Complex[] Data)
         {
-            FFT_rec(Data, true);
+            FFT_rec(ref Data, true);
+            for (int i = 0; i < Data.Length; i++)
+            {
+                Data[i] = Data[i] / Data.Length;
+            }
         }
-        static void FFT_rec(Complex[] data, bool IsInverseTransform)
+        static void FFT_rec(ref Complex[] data, bool IsInverseTransform)
         {
             if (data.Length <= 1) return;
             Complex[] dataEven = new Complex[data.Length / 2];
@@ -47,8 +36,8 @@ namespace BigInteger
                 dataOdd[i / 2] = data[i++];
                 dataEven[i / 2] = data[i++];
             }
-            FFT_rec(dataEven, IsInverseTransform);
-            FFT_rec(dataOdd, IsInverseTransform);
+            FFT_rec(ref dataEven, IsInverseTransform);
+            FFT_rec(ref dataOdd, IsInverseTransform);
             for (int i = 0; i < data.Length / 2; ++i)
             {
                 Complex phi = new Complex(Math.Cos(-2 * Math.PI * i / data.Length), Math.Sin(-2 * Math.PI * i / data.Length));
@@ -57,9 +46,10 @@ namespace BigInteger
                 data[data.Length / 2 + i] = dataEven[i] - t;
             }
         }
-        public void Print()
+        public static void Print(Complex[] Data)
         {
-            Console.WriteLine(string.Join(" ", Intensivity));
+            Console.WriteLine(string.Join(" ", (from c in Data
+                                                select Math.Round(c.Real)).ToArray()));
         }
     }
     class BigInt
@@ -228,22 +218,22 @@ namespace BigInteger
         {
             return (A + (-B));
         }
-        public Complex[] FFT()
+        public Complex[] FFT(int length)
         {
-            Complex[] form = new Complex[s.Length];
-            for (int i = 0; i < s.Length; i++)
+            Complex[] form = new Complex[length];
+            for (int i = length-1; i >= length-s.Length; i--)
             {
-                form[i] = (char)s[i] - '0';
+                form[i] = (char)s[length - i - 1] - '0';
             }
-            Fourier F = new Fourier(form);
-            return F.Data;
+            Fourier.FFT(ref form);
+            return form;
         }
         public static BigInt operator *(BigInt A, double d)
         {
             //PIZDEC
             if (d == 10)
             {
-                A.s.Insert(0, "0");
+                A.s = A.s.Insert(0, "0");
                 return A;
             }
             else return new BigInt(0);
@@ -252,32 +242,21 @@ namespace BigInteger
         public static BigInt operator*(BigInt A, BigInt B)
         {
             Complex[] a, b;
-            if (A.s.Length > B.s.Length)
-            {
-                a = A.FFT();
-                b = B.FFT();
-            }
-            else
-            {
-                b = A.FFT();
-                a = B.FFT();
-            }
-            for (int i = 0; i < b.Length; i++)
+            int N = 2 << (int)Math.Ceiling(Math.Log(Math.Max(A.s.Length, B.s.Length)) / Math.Log(2));
+            a = A.FFT(N);
+            b = B.FFT(N);
+            for (int i = 0; i < a.Length; i++)
             {
                 a[i] *= b[i];
             }
-            for (int i = b.Length; i < a.Length; i++)
+
+            Fourier.IFFT(ref a);
+            BigInt C = new BigInt(0);
+            for (int i = a.Length-1; i >= 0; i--)
             {
-                a[i] = 0;
+                C = C*10 + new BigInt((int)a[i].Real);
             }
-            Fourier F = new Fourier(a);
-            F.IFFT();
-            BigInt C = new BigInt((int)a[0].Magnitude);
-            for (int i = 1; i < a.Length; i++)
-            {
-                C = C + new BigInt((int)a[i].Magnitude);//???
-            }
-            return A;
+            return C;
         }
         public void Print()
         {
@@ -289,21 +268,31 @@ namespace BigInteger
     {
         static void Main(string[] args)
         {
-            /*
-            BigInt a = new BigInt("-1");
-            BigInt b = new BigInt("-999");
-            a += b;
-            a.Print();
-            */
-            int L = 257;
-            double[] a = new double[L];
+            
+            BigInt a = new BigInt("10");
+            BigInt b = new BigInt("11");
+            //a *= b;
+            Complex[] d = new Complex[4];
+            d = b.FFT(4);
+            Fourier.IFFT(ref d);
+            Fourier.Print(d);
+            
+            d[0] = new Complex(2, 0);
+            d[1] = new Complex(-1, 1);
+            d[2] = new Complex(0, 0);
+            d[3] = new Complex(-1, -1);
+            Fourier.IFFT(ref d);
+            //Fourier.Print(d);
+            //Console.WriteLine("{0} {1} {2} {3}", d[0], d[1], d[2], d[3]);
+            /*int L = 127;
+            Complex[] a = new Complex[L];
             for (int i = 0; i < L; ++i)
             {
-                a[i] = Math.Sin(2 * Math.PI * i/12);
+                a[i] = (Complex)Math.Cos(2 * Math.PI * i/12);
             }
-            Fourier f = new Fourier(a);
-            f.FFT();
-            f.Print();
+            L++;
+            Fourier.FFT(ref a);
+            Fourier.Print(a);*/
             Console.ReadKey();
         }
     }
