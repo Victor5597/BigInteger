@@ -130,7 +130,7 @@ namespace BigInteger
             byte count = 0;
             for (int i = 0; i < a.Length; i++)
             {
-                if (a[i] + b[i] + count < '5' * 2)
+                if (a[i] + b[i] + count < '5' * 2) //wtf?!
                 {
                     s += (char)(a[i] + b[i] + count - '0');
                     count = 0;
