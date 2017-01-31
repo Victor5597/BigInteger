@@ -197,7 +197,6 @@ namespace BigInteger
             }
             s = s.Insert(b.Length, a.Substring(b.Length));
             s = RemoveZeros(s);
-            if (IsNegative == true) s.Insert(0, "-");
             return new BigInt(IsNegative, s, true);
         }
         public static BigInt operator+(BigInt A, BigInt B)
@@ -276,7 +275,8 @@ namespace BigInteger
             
             BigInt a = new BigInt("10");
             BigInt b = new BigInt("11");
-            (a + b).Print();
+            a -= b;
+            a.Print();
             //a *= b;
             Complex[] d = new Complex[4];
             d = b.FFT(4);
