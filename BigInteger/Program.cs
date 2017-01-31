@@ -127,10 +127,13 @@ namespace BigInteger
             }
             a += '0';
             b += new string('0', a.Length - b.Length);
-            byte count = 0;
+            int cur = 0;
             for (int i = 0; i < a.Length; i++)
             {
-                if (a[i] + b[i] + count < '5' * 2) //wtf?!
+                cur = a[i] - '0' + b[i] - '0' + cur;
+                s += (char)('0' + cur % 10);
+                cur /= 10; 
+                /*if (a[i] + b[i] + count < '5' * 2) //wtf?!
                 {
                     s += (char)(a[i] + b[i] + count - '0');
                     count = 0;
@@ -139,7 +142,7 @@ namespace BigInteger
                 {
                     s += (char)(a[i] + b[i] + count - '0' - 10);
                     count = 1;
-                }
+                }*/
             }
             s = s.Insert(b.Length, a.Substring(b.Length));
             s = RemoveZeros(s);
@@ -273,6 +276,7 @@ namespace BigInteger
             
             BigInt a = new BigInt("10");
             BigInt b = new BigInt("11");
+            (a + b).Print();
             //a *= b;
             Complex[] d = new Complex[4];
             d = b.FFT(4);
